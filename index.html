@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EduData Portal — Manajemen Data Siswa</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        /* ════════════════════════════════════════════
+           CATATAN PENGEMBANG — HARDCODED URL
+           ════════════════════════════════════════════
+           Ganti nilai WEB_APP_URL di dalam <script>
+           di bawah ini dengan URL Google Apps Script
+           (Web App) milik Anda. Cukup sekali, selesai.
+           ════════════════════════════════════════════ */
+
+        :root {
+            --brand:   #4f46e5;
+            --brand2:  #7c3aed;
+            --surface: #ffffff;
+            --bg:      #f1f5f9;
+            --border:  #e2e8f0;
+            --text:    #1e293b;
+            --muted:   #64748b;
+            --sky:     #0369a1;
+            --rose:    #be123c;
+            --amber:   #b45309;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100dvh;
+            margin: 0;
+        }
+        .modal-open { overflow: hidden; }
+
+        /* ── Scrollbar tipis ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; }
+
+        /* ── Status dot ── */
+        .dot { display:inline-block; width:8px; height:8px; border-radius:50%; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+        .badge-pulse { animation: blink 1.4s ease infinite; }
+
+        /* ── Row animation ── */
+        #siswaTableBody tr { animation: fadeRow .22s ease both; }
+        @keyframes fadeRow {
+            from { opacity:0; transform:translateY(5px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* ── Form fields ── */
+        .field-label {
+            display:block; font-size:.65rem; font-weight:700;
+            text-transform:uppercase; letter-spacing:.05em;
+            color: var(--muted); margin-bottom:.3rem;
+        }
+        .field-input {
+            width:100%; background:#f8fafc; border:1.5px solid var(--border);
+            border-radius:.75rem; padding:.55rem 1rem; font-size:.875rem;
+            outline:none; transition:border-color .15s, box-shadow .15s;
+            color: var(--text);
+            -webkit-appearance: none; appearance: none;
+        }
+        .field-input:focus { border-color: var(--brand); box-shadow:0 0 0 3px #6366f133; }
+        .field-edit:focus  { border-color: #10b981;      box-shadow:0 0 0 3px #10b98133; }
+
+        /* ── Mobile card table ── */
+        @media (max-width: 767px) {
+            .desktop-table { display: none !important; }
+            .mobile-cards  { display: block !important; }
+        }
+        @media (min-width: 768px) {
+            .desktop-table { display: table !important; }
+            .mobile-cards  { display: none !important; }
+        }
+        .mobile-cards { display: none; }
+
+        /* ── Siswa card ── */
+        .siswa-card {
+            background: white; border-radius: 1rem; padding: 1rem;
+            border: 1px solid var(--border);
+            animation: fadeRow .22s ease both;
+            transition: box-shadow .15s;
+        }
+        .siswa-card:active { box-shadow: 0 0 0 2px var(--brand); }
+
+        /* ── Navbar height for mobile sticky ── */
+        .safe-top { padding-top: env(safe-area-inset-top, 0px); }
+
+        /* ── Tap-friendly buttons ── */
+        .btn-action {
+            min-width: 40px; min-height: 40px;
+            display:inline-flex; align-items:center; justify-content:center;
+            border-radius: .75rem; transition: background .15s;
+        }
+
+        /* ── Modal scroll fix mobile ── */
+        .modal-inner {
+            max-height: 92dvh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ── Floating FAB (mobile add button) ── */
+        #fabAdd {
+            position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 40;
+            width: 56px; height: 56px; border-radius: 50%;
+            background: var(--brand); color: white; font-size: 1.25rem;
+            box-shadow: 0 8px 24px #6366f155;
+            border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: transform .15s, background .15s;
+        }
+        #fabAdd:active { transform: scale(.93); background: var(--brand2); }
+        @media (min-width: 768px) { #fabAdd { display: none; } }
+
+        /* ── Gradient header ── */
+        .modal-header-add  { background: linear-gradient(135deg, #4f46e5, #7c3aed); }
+        .modal-header-edit { background: linear-gradient(135deg, #059669, #0d9488); }
+    </style>
+</head>
+<body>
+
+<!-- ════════════════════════ NAVBAR ════════════════════════ -->
+<nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm safe-top">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+        <div class="flex justify-between items-center h-16">
+            <!-- Brand -->
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md flex-shrink-0">
+                    <i class="fa-solid fa-graduation-cap text-lg w-5 text-center"></i>
+                </div>
+                <div class="min-w-0">
+                    <span class="text-base font-extrabold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent leading-none block">EduData Portal</span>
+                    <p class="text-[10px] text-slate-400 font-bold tracking-widest uppercase leading-none mt-0.5">Panel Wali Kelas</p>
+                </div>
+            </div>
+            <!-- Status + Refresh -->
+            <div class="flex items-center gap-2 sm:gap-4">
+                <div class="flex flex-col items-end min-w-0">
+                    <span id="syncBadge" class="text-xs font-semibold flex items-center gap-1 text-amber-600 whitespace-nowrap">
+                        <span class="dot bg-amber-400 badge-pulse"></span>
+                        <span class="hidden xs:inline">Menghubungkan...</span>
+                        <span class="xs:hidden">...</span>
+                    </span>
+                    <span id="syncTime" class="text-[10px] text-slate-400 mt-0.5 truncate max-w-[120px] sm:max-w-none"></span>
+                </div>
+                <button onclick="fetchSiswaData()" title="Refresh"
+                        class="flex items-center gap-2 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-xl transition-all min-h-[36px]">
+                    <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i>
+                    <span class="hidden sm:inline">Refresh</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- ════════════════════════ MAIN ════════════════════════ -->
+<main class="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 pb-28 md:pb-10">
+
+    <!-- STAT CARDS -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between">
+            <div>
+                <p class="text-[10px] font-bold uppercase text-slate-400 mb-1">Total Siswa</p>
+                <h3 id="statTotal" class="text-3xl font-extrabold text-slate-800">—</h3>
+            </div>
+            <div class="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
+                <i class="fa-solid fa-users"></i>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between">
+            <div>
+                <p class="text-[10px] font-bold uppercase text-slate-400 mb-1">Laki-Laki</p>
+                <h3 id="statLaki" class="text-3xl font-extrabold text-sky-700">—</h3>
+            </div>
+            <div class="w-11 h-11 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
+                <i class="fa-solid fa-mars"></i>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between">
+            <div>
+                <p class="text-[10px] font-bold uppercase text-slate-400 mb-1">Perempuan</p>
+                <h3 id="statPerempuan" class="text-3xl font-extrabold text-rose-600">—</h3>
+            </div>
+            <div class="w-11 h-11 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
+                <i class="fa-solid fa-venus"></i>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex items-center justify-between col-span-2 lg:col-span-1">
+            <div>
+                <p class="text-[10px] font-bold uppercase text-slate-400 mb-1">Distribusi Agama</p>
+                <p id="statAgama" class="text-xs text-slate-600 font-semibold leading-relaxed">—</p>
+            </div>
+            <div class="w-11 h-11 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-lg flex-shrink-0">
+                <i class="fa-solid fa-book-bookmark"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <!-- Buttons (hidden on mobile — FAB digunakan) -->
+        <div class="hidden md:flex flex-wrap items-center gap-2">
+            <button onclick="openModal('addModal')"
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm shadow-sm transition-all flex items-center gap-2">
+                <i class="fa-solid fa-user-plus"></i> Tambah Siswa
+            </button>
+            <button onclick="downloadCSVTemplate()"
+                    class="bg-white hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-sm border border-slate-200 shadow-sm transition-all flex items-center gap-2">
+                <i class="fa-solid fa-download text-indigo-600"></i> Template CSV
+            </button>
+            <label class="bg-white hover:bg-slate-50 text-slate-700 font-semibold px-4 py-2.5 rounded-xl text-sm border border-slate-200 shadow-sm transition-all flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-file-import text-emerald-600"></i> Upload CSV
+                <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
+            </label>
+        </div>
+        <!-- Search -->
+        <div class="relative w-full sm:w-80 md:ml-auto">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <i class="fa-solid fa-magnifying-glass text-sm"></i>
+            </div>
+            <input type="search" id="searchInput" oninput="filterTable()"
+                   class="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-9 pr-4 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all shadow-sm"
+                   placeholder="Cari nama, NISN, NIK…"
+                   autocomplete="off" autocorrect="off" spellcheck="false">
+        </div>
+    </div>
+
+    <!-- ══ DESKTOP TABLE ══ -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden desktop-table">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse" id="siswaTable">
+                <thead>
+                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+                        <th class="px-4 py-3.5 w-10">No</th>
+                        <th class="px-4 py-3.5">Nama Lengkap</th>
+                        <th class="px-4 py-3.5">NIS</th>
+                        <th class="px-4 py-3.5">NISN</th>
+                        <th class="px-4 py-3.5 w-14">JK</th>
+                        <th class="px-4 py-3.5">Tempat Lahir</th>
+                        <th class="px-4 py-3.5">Tanggal Lahir</th>
+                        <th class="px-4 py-3.5">NIK</th>
+                        <th class="px-4 py-3.5">Agama</th>
+                        <th class="px-4 py-3.5 text-center w-24">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="siswaTableBody" class="divide-y divide-slate-100 text-sm text-slate-700">
+                    <tr><td colspan="10" class="px-4 py-14 text-center text-slate-400">
+                        <i class="fa-solid fa-spinner animate-spin text-2xl text-indigo-300 mb-3 block"></i>
+                        <p class="font-semibold text-slate-500 text-sm">Memuat data...</p>
+                    </td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="border-t border-slate-100 px-4 py-2.5 flex items-center justify-between bg-slate-50/50">
+            <span id="tableFooter" class="text-xs text-slate-400"></span>
+            <span class="text-xs text-slate-300 font-mono hidden sm:block">EduData Portal v3</span>
+        </div>
+    </div>
+
+    <!-- ══ MOBILE CARDS ══ -->
+    <div id="mobileCardContainer" class="mobile-cards space-y-3">
+        <div class="siswa-card text-center text-slate-400">
+            <i class="fa-solid fa-spinner animate-spin text-2xl text-indigo-300 mb-2 block"></i>
+            <p class="text-sm font-semibold text-slate-500">Memuat data...</p>
+        </div>
+    </div>
+
+    <!-- Mobile toolbar bottom (CSV dll) -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-3 flex items-center gap-2 z-30" style="padding-bottom: max(12px, env(safe-area-inset-bottom));">
+        <button onclick="downloadCSVTemplate()"
+                class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all">
+            <i class="fa-solid fa-download text-indigo-600"></i> Template
+        </button>
+        <label class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
+            <i class="fa-solid fa-file-import text-emerald-600"></i> Upload CSV
+            <input type="file" id="csvFileInputMobile" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
+        </label>
+        <button onclick="fetchSiswaData()"
+                class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all">
+            <i class="fa-solid fa-arrows-rotate" id="refreshIconMobile"></i> Refresh
+        </button>
+    </div>
+</main>
+
+<!-- Floating Action Button (mobile) -->
+<button id="fabAdd" onclick="openModal('addModal')" title="Tambah Siswa">
+    <i class="fa-solid fa-plus"></i>
+</button>
+
+<!-- ════════════════ MODAL TAMBAH ════════════════ -->
+<div id="addModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden modal-inner">
+        <div class="modal-header-add px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
+            <h3 class="font-bold text-base flex items-center gap-2">
+                <i class="fa-solid fa-user-plus"></i> Tambah Data Siswa
+            </h3>
+            <button onclick="closeModal('addModal')" class="text-white/70 hover:text-white text-xl w-8 h-8 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form id="addSiswaForm" onsubmit="submitAddSiswa(event)" class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="sm:col-span-2">
+                <label class="field-label">Nama Lengkap <span class="text-rose-500">*</span></label>
+                <input type="text" name="nama" required class="field-input" placeholder="Nama lengkap siswa" autocomplete="off">
+            </div>
+            <div>
+                <label class="field-label">NIS</label>
+                <input type="text" name="nis" class="field-input" placeholder="Nomor Induk Siswa" inputmode="numeric">
+            </div>
+            <div>
+                <label class="field-label">NISN <span class="text-rose-500">*</span></label>
+                <input type="text" name="nisn" required class="field-input" placeholder="10 digit NISN" inputmode="numeric">
+            </div>
+            <div>
+                <label class="field-label">Jenis Kelamin <span class="text-rose-500">*</span></label>
+                <select name="jk" required class="field-input">
+                    <option value="L">Laki-Laki (L)</option>
+                    <option value="P">Perempuan (P)</option>
+                </select>
+            </div>
+            <div>
+                <label class="field-label">Agama <span class="text-rose-500">*</span></label>
+                <select name="agama" required class="field-input">
+                    <option value="" disabled selected>— Pilih Agama —</option>
+                    <option value="Islam">Islam</option>
+                    <option value="Kristen">Kristen</option>
+                    <option value="Katolik">Katolik</option>
+                    <option value="Hindu">Hindu</option>
+                    <option value="Buddha">Buddha</option>
+                    <option value="Konghucu">Konghucu</option>
+                    <option value="Aliran Kepercayaan">Aliran Kepercayaan</option>
+                </select>
+            </div>
+            <div>
+                <label class="field-label">Tempat Lahir</label>
+                <input type="text" name="tempat_lahir" class="field-input" placeholder="Kota tempat lahir" autocomplete="off">
+            </div>
+            <div>
+                <label class="field-label">Tanggal Lahir</label>
+                <input type="date" name="tanggal_lahir" class="field-input">
+            </div>
+            <div class="sm:col-span-2">
+                <label class="field-label">NIK</label>
+                <input type="text" name="nik" maxlength="16" class="field-input font-mono" placeholder="16 digit NIK" inputmode="numeric">
+            </div>
+            <div class="sm:col-span-2 flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeModal('addModal')"
+                        class="px-4 py-2.5 border border-slate-200 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-all min-h-[44px]">
+                    Batal
+                </button>
+                <button type="submit"
+                        class="px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl hover:bg-indigo-700 shadow-md transition-all min-h-[44px]">
+                    <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Data
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ════════════════ MODAL EDIT ════════════════ -->
+<div id="editModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden modal-inner">
+        <div class="modal-header-edit px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
+            <h3 class="font-bold text-base flex items-center gap-2">
+                <i class="fa-solid fa-user-pen"></i> Edit Data Siswa
+            </h3>
+            <button onclick="closeModal('editModal')" class="text-white/70 hover:text-white text-xl w-8 h-8 flex items-center justify-center">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form id="editSiswaForm" onsubmit="submitEditSiswa(event)" class="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <input type="hidden" id="editOldNisn" name="oldNisn">
+            <div class="sm:col-span-2">
+                <label class="field-label">Nama Lengkap <span class="text-rose-500">*</span></label>
+                <input type="text" id="editNama" name="nama" required class="field-input field-edit" autocomplete="off">
+            </div>
+            <div>
+                <label class="field-label">NIS</label>
+                <input type="text" id="editNis" name="nis" class="field-input field-edit" inputmode="numeric">
+            </div>
+            <div>
+                <label class="field-label">NISN <span class="text-rose-500">*</span></label>
+                <input type="text" id="editNisn" name="nisn" required class="field-input field-edit" inputmode="numeric">
+            </div>
+            <div>
+                <label class="field-label">Jenis Kelamin <span class="text-rose-500">*</span></label>
+                <select id="editJk" name="jk" required class="field-input field-edit">
+                    <option value="L">Laki-Laki (L)</option>
+                    <option value="P">Perempuan (P)</option>
+                </select>
+            </div>
+            <div>
+                <label class="field-label">Agama <span class="text-rose-500">*</span></label>
+                <select id="editAgama" name="agama" required class="field-input field-edit">
+                    <option value="Islam">Islam</option>
+                    <option value="Kristen">Kristen</option>
+                    <option value="Katolik">Katolik</option>
+                    <option value="Hindu">Hindu</option>
+                    <option value="Buddha">Buddha</option>
+                    <option value="Konghucu">Konghucu</option>
+                    <option value="Aliran Kepercayaan">Aliran Kepercayaan</option>
+                </select>
+            </div>
+            <div>
+                <label class="field-label">Tempat Lahir</label>
+                <input type="text" id="editTempatLahir" name="tempat_lahir" class="field-input field-edit" autocomplete="off">
+            </div>
+            <div>
+                <label class="field-label">Tanggal Lahir</label>
+                <input type="date" id="editTanggalLahir" name="tanggal_lahir" class="field-input field-edit">
+            </div>
+            <div class="sm:col-span-2">
+                <label class="field-label">NIK</label>
+                <input type="text" id="editNik" name="nik" maxlength="16" class="field-input field-edit font-mono" inputmode="numeric">
+            </div>
+            <div class="sm:col-span-2 flex justify-end gap-3 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeModal('editModal')"
+                        class="px-4 py-2.5 border border-slate-200 text-slate-600 text-sm font-semibold rounded-xl hover:bg-slate-50 transition-all min-h-[44px]">
+                    Batal
+                </button>
+                <button type="submit"
+                        class="px-5 py-2.5 bg-emerald-600 text-white text-sm font-bold rounded-xl hover:bg-emerald-700 shadow-md transition-all min-h-[44px]">
+                    <i class="fa-solid fa-floppy-disk mr-1"></i> Simpan Perubahan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     SCRIPT UTAMA
+     ════════════════════════════════════════════════════════ -->
+<script>
+// ╔══════════════════════════════════════════════════════╗
+// ║  ▶▶▶  PASTE URL GOOGLE APPS SCRIPT DI SINI  ◀◀◀    ║
+// ╚══════════════════════════════════════════════════════╝
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwRjkycFKtRwm-Vd4YTD4GohDyAhaeLUTFvgZkO7OKpEM0sUY72kK_t0JC6yxhO934w/exec";
+//
+// Cara mendapatkan URL:
+//  1. Buka Google Apps Script (script.google.com)
+//  2. Klik Deploy → New Deployment → Web App
+//  3. "Execute as": Me
+//     "Who has access": Anyone
+//  4. Klik Deploy, salin URL, tempel di atas.
+// ══════════════════════════════════════════════════════════
+
+let allSiswaData = [];
+
+// ── Init ──────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    if (!WEB_APP_URL || WEB_APP_URL.includes("GANTI_DENGAN")) {
+        showEmptyState("⚠️ URL Google Apps Script belum diisi. Buka file HTML ini dan isi WEB_APP_URL di bagian script.");
+        setStatus("disconnected", "URL belum diset");
+        return;
+    }
+    fetchSiswaData();
+});
+
+// ── Modal helpers ──────────────────────────────────────
+function openModal(id) {
+    document.getElementById(id).classList.replace('hidden','flex');
+    document.body.classList.add('modal-open');
+    // Scroll modal ke atas saat dibuka (mobile)
+    setTimeout(() => {
+        const inner = document.querySelector(`#${id} .modal-inner`);
+        if (inner) inner.scrollTop = 0;
+    }, 50);
+}
+function closeModal(id) {
+    document.getElementById(id).classList.replace('flex','hidden');
+    document.body.classList.remove('modal-open');
+}
+// Tutup modal saat tap backdrop
+['addModal','editModal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) {
+        if (e.target === this) closeModal(id);
+    });
+});
+
+// ── Status badge ──────────────────────────────────────
+function setStatus(state, label) {
+    const badge = document.getElementById('syncBadge');
+    const map = { connected:'emerald', disconnected:'rose', loading:'amber' };
+    const c = map[state] || 'amber';
+    badge.className = `text-xs font-semibold flex items-center gap-1 text-${c}-600`;
+    badge.innerHTML = `<span class="dot bg-${c}-400 ${state==='loading'?'badge-pulse':''}"></span><span class="hidden xs:inline">${label}</span><span class="xs:hidden">${state==='connected'?'✓':'…'}</span>`;
+}
+
+// ── Fetch data ─────────────────────────────────────────
+async function fetchSiswaData() {
+    const icon  = document.getElementById('refreshIcon');
+    const iconM = document.getElementById('refreshIconMobile');
+    [icon,iconM].forEach(i => i && i.classList.add('animate-spin'));
+    setStatus("loading","Mengambil data...");
+    showLoadingState();
+
+    try {
+        const res = await fetch(`${WEB_APP_URL}?action=read`, { method:"GET", redirect:"follow" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const result = await res.json();
+
+        if (result.status === "success") {
+       allSiswaData = (result.data || []).sort((a,b) =>
+    (a.nama||'').localeCompare(b.nama||'','id',{sensitivity:'base'})
+);
+            renderTable(allSiswaData);
+            renderCards(allSiswaData);
+            updateMetrics(allSiswaData);
+            const now = new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+            setStatus("connected",`Terhubung · ${now}`);
+            document.getElementById('syncTime').textContent = `${allSiswaData.length} siswa`;
+            document.getElementById('tableFooter').textContent = `Menampilkan ${allSiswaData.length} siswa`;
+        } else {
+            throw new Error(result.message || "Gagal dari server");
+        }
+    } catch(err) {
+        let msg = err.message || "Error tidak diketahui";
+        if (msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
+            msg = "Gagal terhubung. Pastikan Apps Script di-deploy sebagai Anyone dan coba lagi.";
+        }
+        showEmptyState(msg);
+        setStatus("disconnected","Gagal terhubung");
+    } finally {
+        [icon,iconM].forEach(i => i && i.classList.remove('animate-spin'));
+    }
+}
+
+// ── Loading & empty states ─────────────────────────────
+function showLoadingState() {
+    document.getElementById('siswaTableBody').innerHTML = `
+        <tr><td colspan="10" class="px-4 py-14 text-center text-slate-400">
+            <i class="fa-solid fa-spinner animate-spin text-2xl text-indigo-300 mb-3 block"></i>
+            <p class="text-sm font-semibold text-slate-500">Memuat data dari Google Sheet...</p>
+        </td></tr>`;
+    document.getElementById('mobileCardContainer').innerHTML = `
+        <div class="siswa-card text-center py-8">
+            <i class="fa-solid fa-spinner animate-spin text-2xl text-indigo-300 mb-2 block"></i>
+            <p class="text-sm font-semibold text-slate-500">Memuat data...</p>
+        </div>`;
+}
+
+function showEmptyState(msg) {
+    document.getElementById('siswaTableBody').innerHTML = `
+        <tr><td colspan="10" class="px-4 py-10 text-center">
+            <i class="fa-solid fa-triangle-exclamation text-2xl text-rose-400 mb-2 block"></i>
+            <p class="text-sm font-semibold text-rose-500">${msg}</p>
+        </td></tr>`;
+    document.getElementById('mobileCardContainer').innerHTML = `
+        <div class="siswa-card text-center py-8">
+            <i class="fa-solid fa-triangle-exclamation text-2xl text-rose-400 mb-2 block"></i>
+            <p class="text-sm font-semibold text-rose-500">${msg}</p>
+        </div>`;
+    document.getElementById('tableFooter').textContent = "";
+}
+
+// ── Render Desktop Table ───────────────────────────────
+function renderTable(data) {
+    const tbody = document.getElementById('siswaTableBody');
+    tbody.innerHTML = '';
+
+    if (!data.length) {
+        tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-10 text-center text-slate-400 text-sm">Tidak ada data siswa ditemukan.</td></tr>`;
+        document.getElementById('tableFooter').textContent = "0 data";
+        return;
+    }
+
+    data.forEach((s,i) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50/80 transition-colors";
+        tr.style.animationDelay = `${i*15}ms`;
+        tr.innerHTML = `
+            <td class="px-4 py-3 text-xs font-semibold text-slate-400">${i+1}</td>
+            <td class="px-4 py-3 font-semibold text-slate-900 whitespace-nowrap">${esc(s.nama)}</td>
+            <td class="px-4 py-3 font-mono text-xs text-slate-500">${esc(s.nis)||'—'}</td>
+            <td class="px-4 py-3 font-mono text-xs font-bold text-slate-600">${esc(s.nisn)||'—'}</td>
+            <td class="px-4 py-3">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold ${s.jk==='L'?'bg-sky-50 text-sky-700':'bg-rose-50 text-rose-700'}">
+                    ${esc(s.jk)||'—'}
+                </span>
+            </td>
+            <td class="px-4 py-3 text-slate-600 whitespace-nowrap">${esc(s.tempat_lahir)||'—'}</td>
+            <td class="px-4 py-3 text-slate-600 whitespace-nowrap">${formatTanggal(s.tanggal_lahir)}</td>
+            <td class="px-4 py-3 font-mono text-xs text-slate-500">${esc(s.nik)||'—'}</td>
+            <td class="px-4 py-3">
+                <span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-xs font-semibold">${esc(s.agama)||'—'}</span>
+            </td>
+            <td class="px-4 py-3">
+                <div class="flex justify-center gap-1">
+                    <button onclick="pemicuEdit('${esc(s.nisn)}')" title="Edit"
+                            class="btn-action text-emerald-600 hover:bg-emerald-50 text-sm">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button onclick="deleteSiswa('${esc(s.nisn)}','${esc(s.nama).replace(/'/g,"\\'")}' )" title="Hapus"
+                            class="btn-action text-rose-600 hover:bg-rose-50 text-sm">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('tableFooter').textContent = `Menampilkan ${data.length} dari ${allSiswaData.length} siswa`;
+}
+
+// ── Render Mobile Cards ────────────────────────────────
+function renderCards(data) {
+    const container = document.getElementById('mobileCardContainer');
+    container.innerHTML = '';
+
+    if (!data.length) {
+        container.innerHTML = `<div class="siswa-card text-center py-8 text-slate-400 text-sm">Tidak ada data siswa ditemukan.</div>`;
+        return;
+    }
+
+    data.forEach((s,i) => {
+        const div = document.createElement('div');
+        div.className = 'siswa-card';
+        div.style.animationDelay = `${i*15}ms`;
+        div.innerHTML = `
+            <div class="flex items-start justify-between gap-2 mb-2">
+                <div class="min-w-0">
+                    <p class="font-bold text-slate-900 text-sm leading-snug">${esc(s.nama)}</p>
+                    <p class="text-xs text-slate-400 font-mono mt-0.5">${esc(s.nisn)||'—'}</p>
+                </div>
+                <div class="flex gap-1 flex-shrink-0">
+                    <button onclick="pemicuEdit('${esc(s.nisn)}')"
+                            class="btn-action text-emerald-600 hover:bg-emerald-50 active:bg-emerald-100">
+                        <i class="fa-solid fa-pen-to-square text-sm"></i>
+                    </button>
+                    <button onclick="deleteSiswa('${esc(s.nisn)}','${esc(s.nama).replace(/'/g,"\\'")}' )"
+                            class="btn-action text-rose-600 hover:bg-rose-50 active:bg-rose-100">
+                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                <div>
+                    <span class="text-slate-400 font-semibold">NIS</span>
+                    <span class="font-mono text-slate-600 ml-1">${esc(s.nis)||'—'}</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 font-semibold">JK</span>
+                    <span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${s.jk==='L'?'bg-sky-50 text-sky-700':'bg-rose-50 text-rose-700'}">${esc(s.jk)||'—'}</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 font-semibold">TTL</span>
+                    <span class="text-slate-600 ml-1">${esc(s.tempat_lahir)||'—'}, ${formatTanggal(s.tanggal_lahir)}</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 font-semibold">Agama</span>
+                    <span class="ml-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-semibold">${esc(s.agama)||'—'}</span>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-slate-400 font-semibold">NIK</span>
+                    <span class="font-mono text-slate-600 ml-1">${esc(s.nik)||'—'}</span>
+                </div>
+            </div>`;
+        container.appendChild(div);
+    });
+}
+
+// ── Metrics ───────────────────────────────────────────
+function updateMetrics(data) {
+    document.getElementById('statTotal').textContent     = data.length;
+    document.getElementById('statLaki').textContent      = data.filter(s=>s.jk==='L').length;
+    document.getElementById('statPerempuan').textContent = data.filter(s=>s.jk==='P').length;
+    const cnt = a => data.filter(s=>(s.agama||'').toLowerCase()===a.toLowerCase()).length;
+    const lain = data.length - cnt('islam') - cnt('kristen') - cnt('katolik');
+    document.getElementById('statAgama').innerHTML =
+        `Islam: ${cnt('islam')}<br>Kristen: ${cnt('kristen')}<br>Katolik: ${cnt('katolik')}<br>Lainnya: ${lain}`;
+}
+
+// ── Search ────────────────────────────────────────────
+function filterTable() {
+    const q = document.getElementById('searchInput').value.toLowerCase().trim();
+    const filtered = !q ? allSiswaData : allSiswaData.filter(s =>
+        (s.nama||'').toLowerCase().includes(q) ||
+        (s.nisn||'').toLowerCase().includes(q) ||
+        (s.nik ||'').toLowerCase().includes(q) ||
+        (s.nis ||'').toLowerCase().includes(q)
+    );
+    renderTable(filtered);
+    renderCards(filtered);
+}
+
+// ── Edit trigger ──────────────────────────────────────
+function pemicuEdit(nisn) {
+    const s = allSiswaData.find(x => x.nisn === String(nisn));
+    if (!s) return;
+    document.getElementById('editOldNisn').value      = s.nisn;
+    document.getElementById('editNama').value          = s.nama;
+    document.getElementById('editNis').value           = s.nis;
+    document.getElementById('editNisn').value          = s.nisn;
+    document.getElementById('editJk').value            = s.jk;
+    document.getElementById('editAgama').value         = s.agama;
+    document.getElementById('editTempatLahir').value   = s.tempat_lahir;
+    document.getElementById('editTanggalLahir').value  = s.tanggal_lahir;
+    document.getElementById('editNik').value           = s.nik;
+    openModal('editModal');
+}
+
+// ── Submit Edit ───────────────────────────────────────
+async function submitEditSiswa(e) {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    Swal.fire({title:'Memperbarui...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+    try {
+        const res    = await postToSheet({action:'update', oldNisn:fd.get('oldNisn'), data:buildDataObj(fd)});
+        const result = await res.json();
+        if (result.status==='success') {
+            Swal.fire({icon:'success',title:'Berhasil',text:'Data berhasil diperbarui.',timer:1800,showConfirmButton:false});
+            closeModal('editModal');
+            fetchSiswaData();
+        } else {
+            Swal.fire('Gagal', result.message||'Terjadi kesalahan.', 'error');
+        }
+    } catch { Swal.fire('Error','Gagal menghubungi server Google.','error'); }
+}
+
+// ── Submit Add ────────────────────────────────────────
+async function submitAddSiswa(e) {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    Swal.fire({title:'Menyimpan...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+    try {
+        const res    = await postToSheet({action:'create', data:[buildDataObj(fd)]});
+        const result = await res.json();
+        if (result.status==='success') {
+            Swal.fire({icon:'success',title:'Berhasil',text:'Siswa berhasil disimpan.',timer:1800,showConfirmButton:false});
+            closeModal('addModal');
+            e.target.reset();
+            fetchSiswaData();
+        } else {
+            Swal.fire('Gagal', result.message||'Terjadi kesalahan.', 'error');
+        }
+    } catch { Swal.fire('Error','Gagal menghubungi server Google.','error'); }
+}
+
+// ── Delete ────────────────────────────────────────────
+async function deleteSiswa(nisn, nama) {
+    const conf = await Swal.fire({
+        title:'Hapus Siswa?',
+        html:`Data <b>${nama}</b> akan dihapus permanen dari Google Sheet.`,
+        icon:'warning',
+        showCancelButton:true,
+        confirmButtonColor:'#e11d48',
+        cancelButtonText:'Batal',
+        confirmButtonText:'<i class="fa-solid fa-trash-can"></i> Ya, Hapus'
+    });
+    if (!conf.isConfirmed) return;
+
+    Swal.fire({title:'Menghapus...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+    try {
+        const res    = await postToSheet({action:'delete', nisn});
+        const result = await res.json();
+        if (result.status==='success') {
+            Swal.fire({icon:'success',title:'Terhapus',text:'Data siswa berhasil dihapus.',timer:1500,showConfirmButton:false});
+            fetchSiswaData();
+        } else {
+            Swal.fire('Gagal', result.message||'Terjadi kesalahan.', 'error');
+        }
+    } catch { Swal.fire('Error','Gagal menghubungi server Google.','error'); }
+}
+
+// ── CSV Template ──────────────────────────────────────
+function downloadCSVTemplate() {
+    const headers = ['nama','nis','nisn','jk','tempat_lahir','tanggal_lahir','nik','agama'];
+    const sample  = ['Andi Pratama','5501','102938475','L','Ambon','2010-01-15','3101010101100001','Islam'];
+    const csv     = [headers.join(','), sample.join(',')].join('\n');
+    dlFile("data:text/csv;charset=utf-8,"+encodeURIComponent(csv), "template_siswa.csv");
+}
+
+// ── CSV Upload ────────────────────────────────────────
+function handleCSVUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+        const lines = ev.target.result.split('\n').map(l=>l.trim()).filter(Boolean);
+        if (lines.length <= 1) {
+            Swal.fire('File Kosong','CSV tidak memiliki data selain header.','warning'); return;
+        }
+        const records = [];
+        for (let i=1; i<lines.length; i++) {
+            const cols = lines[i].split(',').map(c=>c.replace(/['"]/g,'').trim());
+            if (cols.length >= 8) {
+                records.push({
+                    nama:cols[0], nis:cols[1], nisn:cols[2],
+                    jk:cols[3], tempat_lahir:cols[4], tanggal_lahir:cols[5],
+                    nik:cols[6], agama:cols[7]
+                });
+            }
+        }
+        if (!records.length) {
+            Swal.fire('Tidak Ada Data','Tidak ada baris valid ditemukan di CSV.','warning'); return;
+        }
+        const conf = await Swal.fire({
+            title:`Upload ${records.length} Siswa?`,
+            text:'Data akan ditambahkan ke Google Sheet.',
+            icon:'question', showCancelButton:true, confirmButtonText:'Ya, Upload'
+        });
+        if (!conf.isConfirmed) return;
+
+        Swal.fire({title:'Mengunggah...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
+        try {
+            const res    = await postToSheet({action:'create', data:records});
+            const result = await res.json();
+            if (result.status==='success') {
+                Swal.fire({icon:'success',title:'Sukses!',text:`${records.length} siswa berhasil diupload.`,timer:2000,showConfirmButton:false});
+                fetchSiswaData();
+            } else {
+                Swal.fire('Gagal', result.message||'Error server.', 'error');
+            }
+        } catch { Swal.fire('Error','Gagal memproses CSV.','error'); }
+        event.target.value = '';
+    };
+    reader.readAsText(file);
+}
+
+// ── Helpers ───────────────────────────────────────────
+function buildDataObj(fd) {
+    return {
+        nama:         (fd.get('nama')         ||'').trim(),
+        nis:          (fd.get('nis')          ||'').trim(),
+        nisn:         (fd.get('nisn')         ||'').trim(),
+        jk:            fd.get('jk'),
+        tempat_lahir: (fd.get('tempat_lahir') ||'').trim(),
+        tanggal_lahir: fd.get('tanggal_lahir')||'',
+        nik:          (fd.get('nik')          ||'').trim(),
+        agama:         fd.get('agama')
+    };
+}
+
+function postToSheet(payload) {
+    return fetch(WEB_APP_URL, {method:'POST', redirect:'follow', body:JSON.stringify(payload)});
+}
+
+function esc(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function formatTanggal(raw) {
+    if (!raw) return '—';
+    try {
+        const d = new Date(raw);
+        return isNaN(d) ? raw : d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+    } catch { return raw; }
+}
+
+function dlFile(href, name) {
+    const a = document.createElement('a');
+    a.href = href; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+</script>
+</body>
+</html>
