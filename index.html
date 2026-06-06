@@ -10,14 +10,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
 
     <style>
-        /* ════════════════════════════════════════════
-           CATATAN PENGEMBANG — HARDCODED URL
-           ════════════════════════════════════════════
-           Ganti nilai WEB_APP_URL di dalam <script>
-           di bawah ini dengan URL Google Apps Script
-           (Web App) milik Anda. Cukup sekali, selesai.
-           ════════════════════════════════════════════ */
-
         :root {
             --brand:   #4f46e5;
             --brand2:  #7c3aed;
@@ -41,24 +33,20 @@
         }
         .modal-open { overflow: hidden; }
 
-        /* ── Scrollbar tipis ── */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 6px; }
 
-        /* ── Status dot ── */
         .dot { display:inline-block; width:8px; height:8px; border-radius:50%; }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
         .badge-pulse { animation: blink 1.4s ease infinite; }
 
-        /* ── Row animation ── */
         #siswaTableBody tr { animation: fadeRow .22s ease both; }
         @keyframes fadeRow {
             from { opacity:0; transform:translateY(5px); }
             to   { opacity:1; transform:translateY(0); }
         }
 
-        /* ── Form fields ── */
         .field-label {
             display:block; font-size:.65rem; font-weight:700;
             text-transform:uppercase; letter-spacing:.05em;
@@ -74,7 +62,6 @@
         .field-input:focus { border-color: var(--brand); box-shadow:0 0 0 3px #6366f133; }
         .field-edit:focus  { border-color: #10b981;      box-shadow:0 0 0 3px #10b98133; }
 
-        /* ── Mobile card table ── */
         @media (max-width: 767px) {
             .desktop-table { display: none !important; }
             .mobile-cards  { display: block !important; }
@@ -85,7 +72,6 @@
         }
         .mobile-cards { display: none; }
 
-        /* ── Siswa card ── */
         .siswa-card {
             background: white; border-radius: 1rem; padding: 1rem;
             border: 1px solid var(--border);
@@ -94,24 +80,20 @@
         }
         .siswa-card:active { box-shadow: 0 0 0 2px var(--brand); }
 
-        /* ── Navbar height for mobile sticky ── */
         .safe-top { padding-top: env(safe-area-inset-top, 0px); }
 
-        /* ── Tap-friendly buttons ── */
         .btn-action {
             min-width: 40px; min-height: 40px;
             display:inline-flex; align-items:center; justify-content:center;
             border-radius: .75rem; transition: background .15s;
         }
 
-        /* ── Modal scroll fix mobile ── */
         .modal-inner {
             max-height: 92dvh;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
 
-        /* ── Floating FAB (mobile add button) ── */
         #fabAdd {
             position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 40;
             width: 56px; height: 56px; border-radius: 50%;
@@ -124,9 +106,76 @@
         #fabAdd:active { transform: scale(.93); background: var(--brand2); }
         @media (min-width: 768px) { #fabAdd { display: none; } }
 
-        /* ── Gradient header ── */
         .modal-header-add  { background: linear-gradient(135deg, #4f46e5, #7c3aed); }
         .modal-header-edit { background: linear-gradient(135deg, #059669, #0d9488); }
+
+        /* ── TOMBOL PORTAL KELAS ── */
+        .btn-portal {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            text-decoration: none;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: #fff;
+            font-size: .75rem;
+            font-weight: 700;
+            padding: 7px 14px;
+            border-radius: .75rem;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: transform .18s, box-shadow .18s;
+            box-shadow: 0 4px 14px rgba(79,70,229,.38);
+            white-space: nowrap;
+            letter-spacing: .01em;
+        }
+        .btn-portal::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0);
+            transition: background .18s;
+        }
+        .btn-portal:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(79,70,229,.45); }
+        .btn-portal:hover::before { background: rgba(255,255,255,.08); }
+        .btn-portal:active { transform: translateY(0) scale(.97); }
+        .btn-portal .portal-badge {
+            background: rgba(255,255,255,.22);
+            border-radius: 5px;
+            font-size: .6rem;
+            padding: 2px 6px;
+            font-weight: 800;
+            letter-spacing: .06em;
+            line-height: 1.4;
+        }
+
+        /* Mobile bottom portal button */
+        .btn-portal-mobile {
+            flex: 1.4;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            font-weight: 700;
+            padding: 10px 0;
+            border-radius: .75rem;
+            font-size: .7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            text-decoration: none;
+            box-shadow: 0 4px 12px rgba(79,70,229,.35);
+            white-space: nowrap;
+            letter-spacing: .01em;
+        }
+        .btn-portal-mobile:active { opacity: .88; transform: scale(.97); }
+
+        /* Divider vertical navbar */
+        .nav-divider {
+            width: 1px; height: 22px;
+            background: #e2e8f0;
+            flex-shrink: 0;
+        }
     </style>
 </head>
 <body>
@@ -135,16 +184,33 @@
 <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm safe-top">
     <div class="max-w-7xl mx-auto px-4 sm:px-6">
         <div class="flex justify-between items-center h-16">
-            <!-- Brand -->
-            <div class="flex items-center gap-3">
-                <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md flex-shrink-0">
-                    <i class="fa-solid fa-graduation-cap text-lg w-5 text-center"></i>
-                </div>
-                <div class="min-w-0">
-                    <span class="text-base font-extrabold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent leading-none block">EduData Portal</span>
-                    <p class="text-[10px] text-slate-400 font-bold tracking-widest uppercase leading-none mt-0.5">Panel Wali Kelas</p>
+            <!-- Brand + Tombol Portal -->
+            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+
+                <!-- TOMBOL KEMBALI KE PORTAL KELAS -->
+                <a href="https://alex-bahy.github.io/Portal-XAKL-2026/"
+                   class="btn-portal flex-shrink-0"
+                   title="Kembali ke Portal Kelas XAKL 2026">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                    <span class="hidden sm:inline">Portal Kelas</span>
+                    <span class="sm:hidden">Portal</span>
+                    <span class="portal-badge hidden xs:inline">XAKL 2026</span>
+                </a>
+
+                <div class="nav-divider hidden sm:block"></div>
+
+                <!-- Brand -->
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md flex-shrink-0">
+                        <i class="fa-solid fa-graduation-cap text-lg w-5 text-center"></i>
+                    </div>
+                    <div class="min-w-0 hidden sm:block">
+                        <span class="text-base font-extrabold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent leading-none block">EduData Portal</span>
+                        <p class="text-[10px] text-slate-400 font-bold tracking-widest uppercase leading-none mt-0.5">Panel Wali Kelas</p>
+                    </div>
                 </div>
             </div>
+
             <!-- Status + Refresh -->
             <div class="flex items-center gap-2 sm:gap-4">
                 <div class="flex flex-col items-end min-w-0">
@@ -210,7 +276,6 @@
 
     <!-- TOOLBAR -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-        <!-- Buttons (hidden on mobile — FAB digunakan) -->
         <div class="hidden md:flex flex-wrap items-center gap-2">
             <button onclick="openModal('addModal')"
                     class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm shadow-sm transition-all flex items-center gap-2">
@@ -225,7 +290,6 @@
                 <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
             </label>
         </div>
-        <!-- Search -->
         <div class="relative w-full sm:w-80 md:ml-auto">
             <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <i class="fa-solid fa-magnifying-glass text-sm"></i>
@@ -237,7 +301,7 @@
         </div>
     </div>
 
-    <!-- ══ DESKTOP TABLE ══ -->
+    <!-- DESKTOP TABLE -->
     <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden desktop-table">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse" id="siswaTable">
@@ -269,7 +333,7 @@
         </div>
     </div>
 
-    <!-- ══ MOBILE CARDS ══ -->
+    <!-- MOBILE CARDS -->
     <div id="mobileCardContainer" class="mobile-cards space-y-3">
         <div class="siswa-card text-center text-slate-400">
             <i class="fa-solid fa-spinner animate-spin text-2xl text-indigo-300 mb-2 block"></i>
@@ -277,14 +341,23 @@
         </div>
     </div>
 
-    <!-- Mobile toolbar bottom (CSV dll) -->
-    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-3 flex items-center gap-2 z-30" style="padding-bottom: max(12px, env(safe-area-inset-bottom));">
+    <!-- Mobile bottom bar -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-3 py-2.5 flex items-center gap-2 z-30" style="padding-bottom: max(10px, env(safe-area-inset-bottom));">
+
+        <!-- TOMBOL PORTAL MOBILE -->
+        <a href="https://alex-bahy.github.io/Portal-XAKL-2026/"
+           class="btn-portal-mobile"
+           title="Portal Kelas XAKL 2026">
+            <i class="fa-solid fa-arrow-left text-xs"></i>
+            <span>Portal</span>
+        </a>
+
         <button onclick="downloadCSVTemplate()"
                 class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all">
             <i class="fa-solid fa-download text-indigo-600"></i> Template
         </button>
         <label class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-2.5 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer">
-            <i class="fa-solid fa-file-import text-emerald-600"></i> Upload CSV
+            <i class="fa-solid fa-file-import text-emerald-600"></i> CSV
             <input type="file" id="csvFileInputMobile" accept=".csv" class="hidden" onchange="handleCSVUpload(event)">
         </label>
         <button onclick="fetchSiswaData()"
@@ -294,12 +367,12 @@
     </div>
 </main>
 
-<!-- Floating Action Button (mobile) -->
+<!-- FAB -->
 <button id="fabAdd" onclick="openModal('addModal')" title="Tambah Siswa">
     <i class="fa-solid fa-plus"></i>
 </button>
 
-<!-- ════════════════ MODAL TAMBAH ════════════════ -->
+<!-- MODAL TAMBAH -->
 <div id="addModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden modal-inner">
         <div class="modal-header-add px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
@@ -369,7 +442,7 @@
     </div>
 </div>
 
-<!-- ════════════════ MODAL EDIT ════════════════ -->
+<!-- MODAL EDIT -->
 <div id="editModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden modal-inner">
         <div class="modal-header-edit px-6 py-4 text-white flex justify-between items-center sticky top-0 z-10">
@@ -439,26 +512,11 @@
     </div>
 </div>
 
-<!-- ════════════════════════════════════════════════════════
-     SCRIPT UTAMA
-     ════════════════════════════════════════════════════════ -->
 <script>
-// ╔══════════════════════════════════════════════════════╗
-// ║  ▶▶▶  PASTE URL GOOGLE APPS SCRIPT DI SINI  ◀◀◀    ║
-// ╚══════════════════════════════════════════════════════╝
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwRjkycFKtRwm-Vd4YTD4GohDyAhaeLUTFvgZkO7OKpEM0sUY72kK_t0JC6yxhO934w/exec";
-//
-// Cara mendapatkan URL:
-//  1. Buka Google Apps Script (script.google.com)
-//  2. Klik Deploy → New Deployment → Web App
-//  3. "Execute as": Me
-//     "Who has access": Anyone
-//  4. Klik Deploy, salin URL, tempel di atas.
-// ══════════════════════════════════════════════════════════
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxI1VP_vxbhqLXzhNtWx-3lb2azgpg3yhGY7MtHZ34pYctnceZvCcmNSOPgl8AVnjJ7/exec";
 
 let allSiswaData = [];
 
-// ── Init ──────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     if (!WEB_APP_URL || WEB_APP_URL.includes("GANTI_DENGAN")) {
         showEmptyState("⚠️ URL Google Apps Script belum diisi. Buka file HTML ini dan isi WEB_APP_URL di bagian script.");
@@ -468,11 +526,9 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchSiswaData();
 });
 
-// ── Modal helpers ──────────────────────────────────────
 function openModal(id) {
     document.getElementById(id).classList.replace('hidden','flex');
     document.body.classList.add('modal-open');
-    // Scroll modal ke atas saat dibuka (mobile)
     setTimeout(() => {
         const inner = document.querySelector(`#${id} .modal-inner`);
         if (inner) inner.scrollTop = 0;
@@ -482,14 +538,12 @@ function closeModal(id) {
     document.getElementById(id).classList.replace('flex','hidden');
     document.body.classList.remove('modal-open');
 }
-// Tutup modal saat tap backdrop
 ['addModal','editModal'].forEach(id => {
     document.getElementById(id).addEventListener('click', function(e) {
         if (e.target === this) closeModal(id);
     });
 });
 
-// ── Status badge ──────────────────────────────────────
 function setStatus(state, label) {
     const badge = document.getElementById('syncBadge');
     const map = { connected:'emerald', disconnected:'rose', loading:'amber' };
@@ -498,7 +552,6 @@ function setStatus(state, label) {
     badge.innerHTML = `<span class="dot bg-${c}-400 ${state==='loading'?'badge-pulse':''}"></span><span class="hidden xs:inline">${label}</span><span class="xs:hidden">${state==='connected'?'✓':'…'}</span>`;
 }
 
-// ── Fetch data ─────────────────────────────────────────
 async function fetchSiswaData() {
     const icon  = document.getElementById('refreshIcon');
     const iconM = document.getElementById('refreshIconMobile');
@@ -512,9 +565,9 @@ async function fetchSiswaData() {
         const result = await res.json();
 
         if (result.status === "success") {
-       allSiswaData = (result.data || []).sort((a,b) =>
-    (a.nama||'').localeCompare(b.nama||'','id',{sensitivity:'base'})
-);
+            allSiswaData = (result.data || []).sort((a,b) =>
+                (a.nama||'').localeCompare(b.nama||'','id',{sensitivity:'base'})
+            );
             renderTable(allSiswaData);
             renderCards(allSiswaData);
             updateMetrics(allSiswaData);
@@ -537,7 +590,6 @@ async function fetchSiswaData() {
     }
 }
 
-// ── Loading & empty states ─────────────────────────────
 function showLoadingState() {
     document.getElementById('siswaTableBody').innerHTML = `
         <tr><td colspan="10" class="px-4 py-14 text-center text-slate-400">
@@ -565,17 +617,14 @@ function showEmptyState(msg) {
     document.getElementById('tableFooter').textContent = "";
 }
 
-// ── Render Desktop Table ───────────────────────────────
 function renderTable(data) {
     const tbody = document.getElementById('siswaTableBody');
     tbody.innerHTML = '';
-
     if (!data.length) {
         tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-10 text-center text-slate-400 text-sm">Tidak ada data siswa ditemukan.</td></tr>`;
         document.getElementById('tableFooter').textContent = "0 data";
         return;
     }
-
     data.forEach((s,i) => {
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50/80 transition-colors";
@@ -610,20 +659,16 @@ function renderTable(data) {
             </td>`;
         tbody.appendChild(tr);
     });
-
     document.getElementById('tableFooter').textContent = `Menampilkan ${data.length} dari ${allSiswaData.length} siswa`;
 }
 
-// ── Render Mobile Cards ────────────────────────────────
 function renderCards(data) {
     const container = document.getElementById('mobileCardContainer');
     container.innerHTML = '';
-
     if (!data.length) {
         container.innerHTML = `<div class="siswa-card text-center py-8 text-slate-400 text-sm">Tidak ada data siswa ditemukan.</div>`;
         return;
     }
-
     data.forEach((s,i) => {
         const div = document.createElement('div');
         div.className = 'siswa-card';
@@ -671,7 +716,6 @@ function renderCards(data) {
     });
 }
 
-// ── Metrics ───────────────────────────────────────────
 function updateMetrics(data) {
     document.getElementById('statTotal').textContent     = data.length;
     document.getElementById('statLaki').textContent      = data.filter(s=>s.jk==='L').length;
@@ -682,7 +726,6 @@ function updateMetrics(data) {
         `Islam: ${cnt('islam')}<br>Kristen: ${cnt('kristen')}<br>Katolik: ${cnt('katolik')}<br>Lainnya: ${lain}`;
 }
 
-// ── Search ────────────────────────────────────────────
 function filterTable() {
     const q = document.getElementById('searchInput').value.toLowerCase().trim();
     const filtered = !q ? allSiswaData : allSiswaData.filter(s =>
@@ -695,7 +738,6 @@ function filterTable() {
     renderCards(filtered);
 }
 
-// ── Edit trigger ──────────────────────────────────────
 function pemicuEdit(nisn) {
     const s = allSiswaData.find(x => x.nisn === String(nisn));
     if (!s) return;
@@ -711,7 +753,6 @@ function pemicuEdit(nisn) {
     openModal('editModal');
 }
 
-// ── Submit Edit ───────────────────────────────────────
 async function submitEditSiswa(e) {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -729,7 +770,6 @@ async function submitEditSiswa(e) {
     } catch { Swal.fire('Error','Gagal menghubungi server Google.','error'); }
 }
 
-// ── Submit Add ────────────────────────────────────────
 async function submitAddSiswa(e) {
     e.preventDefault();
     const fd = new FormData(e.target);
@@ -748,7 +788,6 @@ async function submitAddSiswa(e) {
     } catch { Swal.fire('Error','Gagal menghubungi server Google.','error'); }
 }
 
-// ── Delete ────────────────────────────────────────────
 async function deleteSiswa(nisn, nama) {
     const conf = await Swal.fire({
         title:'Hapus Siswa?',
@@ -760,7 +799,6 @@ async function deleteSiswa(nisn, nama) {
         confirmButtonText:'<i class="fa-solid fa-trash-can"></i> Ya, Hapus'
     });
     if (!conf.isConfirmed) return;
-
     Swal.fire({title:'Menghapus...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
     try {
         const res    = await postToSheet({action:'delete', nisn});
@@ -774,7 +812,6 @@ async function deleteSiswa(nisn, nama) {
     } catch { Swal.fire('Error','Gagal menghubungi server Google.','error'); }
 }
 
-// ── CSV Template ──────────────────────────────────────
 function downloadCSVTemplate() {
     const headers = ['nama','nis','nisn','jk','tempat_lahir','tanggal_lahir','nik','agama'];
     const sample  = ['Andi Pratama','5501','102938475','L','Ambon','2010-01-15','3101010101100001','Islam'];
@@ -782,7 +819,6 @@ function downloadCSVTemplate() {
     dlFile("data:text/csv;charset=utf-8,"+encodeURIComponent(csv), "template_siswa.csv");
 }
 
-// ── CSV Upload ────────────────────────────────────────
 function handleCSVUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -812,7 +848,6 @@ function handleCSVUpload(event) {
             icon:'question', showCancelButton:true, confirmButtonText:'Ya, Upload'
         });
         if (!conf.isConfirmed) return;
-
         Swal.fire({title:'Mengunggah...',allowOutsideClick:false,didOpen:()=>Swal.showLoading()});
         try {
             const res    = await postToSheet({action:'create', data:records});
@@ -829,7 +864,6 @@ function handleCSVUpload(event) {
     reader.readAsText(file);
 }
 
-// ── Helpers ───────────────────────────────────────────
 function buildDataObj(fd) {
     return {
         nama:         (fd.get('nama')         ||'').trim(),
@@ -868,3 +902,5 @@ function dlFile(href, name) {
 </script>
 </body>
 </html>
+
+
